@@ -1,5 +1,7 @@
 import json
 
+from tools.tool_call import run_tool
+
 with open("tools/tools.json", encoding="utf-8") as tools_file:
     tools = json.load(tools_file)
 
@@ -12,9 +14,10 @@ def generate(client, model, messages):
     )
 
     message = response.choices[0].message
+
     tool_call = message.tool_calls[0] if message.tool_calls else None
 
-    if tool_call and tool_call.function.name == "say_hi":
-        return "TOOL CALL\nTOOL: hi"
+    if tool_call:
+        return run_tool(tool_call)
 
     return message.content or ""
