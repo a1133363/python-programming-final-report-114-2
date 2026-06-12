@@ -1,0 +1,16 @@
+[
+  {
+    "type": "function",
+    "function": {
+      "name": "say_hi",
+      "description": "Use this tool when the user asks you to say hi or greet them.",
+      "parameters": {
+        "type": "object",
+        "properties": {},
+        "required": [],
+        "additionalProperties": false
+      },
+      "strict": true
+    }
+  }
+]
