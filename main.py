@@ -27,9 +27,9 @@ def main() -> None:
 
     while True:
         try:
-            user_input = input("\n你：").strip()
+            user_input = input("\n你:").strip()
         except (EOFError, KeyboardInterrupt):
-            print("\n再見")
+            print("\n再見!")
             break
 
         if not user_input:
