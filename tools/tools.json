@@ -2,12 +2,66 @@
   {
     "type": "function",
     "function": {
-      "name": "say_hi",
-      "description": "Use this tool when the user asks you to say hi or greet them.",
+      "name": "read_file",
+      "description": "Read and return the UTF-8 text content of a file in the project.",
       "parameters": {
         "type": "object",
-        "properties": {},
-        "required": [],
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "File path relative to the project root."
+          }
+        },
+        "required": [
+          "path"
+        ],
+        "additionalProperties": false
+      },
+      "strict": true
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "search_files",
+      "description": "Recursively search for files in the project using a glob pattern.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "pattern": {
+            "type": "string",
+            "description": "Glob pattern such as '*.py', 'README*', or 'tools/*.json'."
+          }
+        },
+        "required": [
+          "pattern"
+        ],
+        "additionalProperties": false
+      },
+      "strict": true
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "create_file",
+      "description": "Create a new UTF-8 text file in the project. This tool does not overwrite existing files.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "New file path relative to the project root."
+          },
+          "content": {
+            "type": "string",
+            "description": "Complete text content to write to the new file."
+          }
+        },
+        "required": [
+          "path",
+          "content"
+        ],
         "additionalProperties": false
       },
       "strict": true

@@ -47,10 +47,16 @@ uv run main.py
 
 每次輸入 `chat` 都會建立全新的對話，不會保留上一次的對話紀錄。
 
+`llm/openai.py` 以同步 generator 產生通用事件，包含 AI 文字、
+工具開始、工具完成、最終回答與錯誤。Gateway 只需處理輸入和事件顯示，
+不需管理 OpenAI 的工具呼叫 context。
+
 ## 架構
 
 ```text
-gateways/cli.py  單次 CLI 對話的輸入輸出
-llm/openai.py    OpenAI API 呼叫
-main.py          程式入口、環境設定與指令處理
+gateways/cli.py    CLI 輸入與事件顯示
+llm/openai.py      對話 context、OpenAI API 與工具調用迴圈
+tools/tool_call.py 工具執行處理
+tools/tools.json   OpenAI tools 定義
+main.py            程式入口、環境設定與指令處理
 ```
