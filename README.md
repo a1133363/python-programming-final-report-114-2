@@ -36,7 +36,7 @@ OPENAI_API_KEY=your-api-key
 ## 執行
 
 ```powershell
-uv run python main.py
+uv run main.py
 ```
 
 輸入 `exit` 或 `quit` 即可結束程式。
