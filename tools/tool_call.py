@@ -1,4 +1,4 @@
-import json
+import asyncio
 from pathlib import Path
 
 
@@ -17,7 +17,7 @@ def _resolve_workspace_path(path):
     return resolved_path
 
 
-def read_file(path):
+def _read_file_sync(path):
     file_path = _resolve_workspace_path(path)
 
     if not file_path.is_file():
@@ -26,7 +26,11 @@ def read_file(path):
     return file_path.read_text(encoding="utf-8")
 
 
-def search_files(pattern):
+async def read_file(path):
+    return await asyncio.to_thread(_read_file_sync, path)
+
+
+def _search_files_sync(pattern):
     if not pattern.strip():
         raise ValueError("搜尋條件不可為空白。")
 
@@ -52,7 +56,11 @@ def search_files(pattern):
     return "\n".join(sorted(matches))
 
 
-def create_file(path, content):
+async def search_files(pattern):
+    return await asyncio.to_thread(_search_files_sync, pattern)
+
+
+def _create_file_sync(path, content):
     file_path = _resolve_workspace_path(path)
 
     if file_path.exists():
@@ -69,6 +77,10 @@ def create_file(path, content):
     return f"已新增檔案：{file_path.relative_to(WORKSPACE_ROOT).as_posix()}"
 
 
+async def create_file(path, content):
+    return await asyncio.to_thread(_create_file_sync, path, content)
+
+
 TOOL_HANDLERS = {
     "read_file": read_file,
     "search_files": search_files,
@@ -76,16 +88,14 @@ TOOL_HANDLERS = {
 }
 
 
-def run_tool(tool_call):
-    tool_name = tool_call.function.name
+async def run_tool(tool_name, arguments):
     handler = TOOL_HANDLERS.get(tool_name)
 
     if handler is None:
         return f"工具執行失敗：不支援的工具：{tool_name}"
 
     try:
-        arguments = json.loads(tool_call.function.arguments or "{}")
-        result = handler(**arguments)
+        result = await handler(**arguments)
     except (OSError, TypeError, UnicodeError, ValueError) as error:
         return f"工具執行失敗：{error}"
 

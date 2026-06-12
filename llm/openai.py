@@ -1,4 +1,6 @@
+import asyncio
 import json
+from functools import cache
 from pathlib import Path
 
 from openai import OpenAIError
@@ -8,8 +10,15 @@ from tools.tool_call import run_tool
 TOOLS_PATH = Path(__file__).resolve().parent.parent / "tools" / "tools.json"
 MAX_TOOL_ROUNDS = 10
 
-with TOOLS_PATH.open(encoding="utf-8") as tools_file:
-    tools = json.load(tools_file)
+
+@cache
+def _load_tools_sync():
+    with TOOLS_PATH.open(encoding="utf-8") as tools_file:
+        return json.load(tools_file)
+
+
+async def load_tools():
+    return await asyncio.to_thread(_load_tools_sync)
 
 
 def create_context(system_prompt):
@@ -45,12 +54,17 @@ def _parse_tool_arguments(tool_call):
         return {}
 
 
-def generate(client, model, messages, user_input):
+async def _execute_tool(index, tool_name, arguments):
+    result = await run_tool(tool_name, arguments)
+    return index, result
+
+
+async def generate(client, model, messages, tools, user_input):
     messages.append({"role": "user", "content": user_input})
 
     for _ in range(MAX_TOOL_ROUNDS):
         try:
-            response = client.chat.completions.create(
+            response = await client.chat.completions.create(
                 model=model,
                 messages=messages,
                 tools=tools,
@@ -78,9 +92,12 @@ def generate(client, model, messages, user_input):
                 "content": message.content,
             }
 
-        for tool_call in message.tool_calls:
+        tool_requests = []
+
+        for index, tool_call in enumerate(message.tool_calls):
             tool_name = tool_call.function.name
             arguments = _parse_tool_arguments(tool_call)
+            tool_requests.append((index, tool_call, tool_name, arguments))
 
             yield {
                 "type": "tool_started",
@@ -88,7 +105,38 @@ def generate(client, model, messages, user_input):
                 "arguments": arguments,
             }
 
-            result = run_tool(tool_call)
+        tasks = [
+            asyncio.create_task(
+                _execute_tool(index, tool_name, arguments)
+            )
+            for index, _, tool_name, arguments in tool_requests
+        ]
+        results = [None] * len(tasks)
+
+        try:
+            for completed_task in asyncio.as_completed(tasks):
+                index, result = await completed_task
+                results[index] = result
+                _, _, tool_name, arguments = tool_requests[index]
+
+                yield {
+                    "type": "tool_finished",
+                    "name": tool_name,
+                    "arguments": arguments,
+                    "result": result,
+                    "success": not result.startswith("工具執行失敗"),
+                }
+        finally:
+            for task in tasks:
+                task.cancel()
+
+            await asyncio.gather(*tasks, return_exceptions=True)
+
+        for (_, tool_call, _, _), result in zip(
+            tool_requests,
+            results,
+            strict=True,
+        ):
             messages.append(
                 {
                     "role": "tool",
@@ -96,14 +144,6 @@ def generate(client, model, messages, user_input):
                     "content": result,
                 }
             )
-
-            yield {
-                "type": "tool_finished",
-                "name": tool_name,
-                "arguments": arguments,
-                "result": result,
-                "success": not result.startswith("工具執行失敗"),
-            }
 
     limit_message = "工具調用次數已達上限，已停止此次請求。"
     messages.append({"role": "assistant", "content": limit_message})

@@ -47,9 +47,13 @@ uv run main.py
 
 每次輸入 `chat` 都會建立全新的對話，不會保留上一次的對話紀錄。
 
-`llm/openai.py` 以同步 generator 產生通用事件，包含 AI 文字、
+`llm/openai.py` 以非同步 generator 產生通用事件，包含 AI 文字、
 工具開始、工具完成、最終回答與錯誤。Gateway 只需處理輸入和事件顯示，
 不需管理 OpenAI 的工具呼叫 context。
+
+程式使用 `AsyncOpenAI` 呼叫 API，CLI 與本機檔案 I/O 會透過
+`asyncio.to_thread()` 執行，避免阻塞事件迴圈。同一輪若有多個工具呼叫，
+也會並行執行。
 
 ## 架構
 
