@@ -1,59 +1,56 @@
 import os
 
 from dotenv import load_dotenv
-from openai import OpenAI
+
+from gateways.cli import run
 
 
-def main() -> None:
+def main():
     load_dotenv()
 
     model = os.getenv("MODEL")
-    api_url = os.getenv("API_URL")
-    api_key = os.getenv("API_KEY")
 
-    if not model:
-        print("缺少 MODEL，請先建立 .env 並完成設定。")
-        return
-
-    if not api_key:
-        print("缺少 API_KEY 或 OPENAI_API_KEY，請先完成 .env 設定。")
-        return
-
-    client = OpenAI(api_key=api_key, base_url=api_url)
-    messages = []
-
-    print(f"已啟動，目前模型：{model}")
-    print("輸入 exit 或 quit 結束對話。")
+    print(f"\n已啟動，目前模型：{model}")
+    print("可用指令：")
+    print("  chat    開啟 CLI 對話")
+    print("  models  查看並切換模型")
+    print("  exit    結束程式")
 
     while True:
         try:
-            user_input = input("\n你：").strip()
+            command = input("\n指令：").strip().lower()
         except (EOFError, KeyboardInterrupt):
             print("\n再見！")
-            break
+            return
 
-        if not user_input:
+        if not command:
             continue
 
-        if user_input.lower() in {"exit", "quit"}:
+        if command == "chat":
+            run(model)
+        elif command == "models":
+
+            try:
+                model = input(
+                    "輸入模型 ID（直接 Enter 取消）："
+                ).strip()
+            except (EOFError, KeyboardInterrupt):
+                print("\n已取消切換模型。")
+                continue
+
+            if not model:
+                print("已取消切換模型。")
+                continue
+
+            print(f"已切換模型：{model}")
+        elif command == "help":
+            print(f"\n目前模型：{model}")
+            print("可用指令：chat、models、help、exit")
+        elif command in {"exit", "quit"}:
             print("再見！")
-            break
-
-        messages.append({"role": "user", "content": user_input})
-
-        try:
-            response = client.chat.completions.create(
-                model=model,
-                messages=messages,
-            )
-            assistant_message = response.choices[0].message.content or ""
-        except Exception as error:
-            messages.pop()
-            print(f"發生錯誤：{error}")
-            continue
-
-        messages.append({"role": "assistant", "content": assistant_message})
-        print(f"AI：{assistant_message}")
+            return
+        else:
+            print(f"未知指令：{command}")
 
 
 if __name__ == "__main__":
