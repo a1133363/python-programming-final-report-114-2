@@ -1,4 +1,5 @@
 import os
+import yaml
 
 from dotenv import load_dotenv
 
@@ -7,6 +8,9 @@ from gateways.cli import run
 
 def main():
     load_dotenv()
+
+    with open("config.yaml", encoding="utf-8") as config_file:
+        config = yaml.safe_load(config_file)
 
     model = os.getenv("MODEL")
 
@@ -27,7 +31,7 @@ def main():
             continue
 
         if command == "chat":
-            run(model)
+            run(model, config)
         elif command == "models":
 
             try:
