@@ -51,9 +51,9 @@ uv run main.py
 工具開始、工具完成、最終回答與錯誤。Gateway 只需處理輸入和事件顯示，
 不需管理 OpenAI 的工具呼叫 context。
 
-程式使用 `AsyncOpenAI` 呼叫 API，CLI 與本機檔案 I/O 會透過
-`asyncio.to_thread()` 執行，避免阻塞事件迴圈。同一輪若有多個工具呼叫，
-也會並行執行。
+程式使用 `AsyncOpenAI` 呼叫 API，CLI 輸入與本機檔案 I/O 會透過
+`asyncio.to_thread()` 執行，避免阻塞事件迴圈；CLI 輸出則直接使用
+`print()`。同一輪若有多個工具呼叫，也會並行執行。
 
 ## 架構
 
