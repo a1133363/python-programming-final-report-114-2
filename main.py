@@ -1,10 +1,10 @@
-import asyncio
-import json
 import os
-import random
-from pathlib import Path
-
+import json
 import yaml
+import random
+import asyncio
+
+from pathlib import Path
 from dotenv import load_dotenv
 
 from gateways.cli import run

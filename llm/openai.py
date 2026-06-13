@@ -1,73 +1,43 @@
-import asyncio
 import json
 
-from openai import OpenAIError
 from tools.tool_call import run_tool
-
-
-MAX_TOOL_ROUNDS = 10
-
-
-def _assistant_message_to_context(message):
-    context_message = {
-        "role": "assistant",
-        "content": message.content,
-    }
-
-    if message.tool_calls:
-        context_message["tool_calls"] = [
-            {
-                "id": tool_call.id,
-                "type": tool_call.type,
-                "function": {
-                    "name": tool_call.function.name,
-                    "arguments": tool_call.function.arguments,
-                },
-            }
-            for tool_call in message.tool_calls
-        ]
-
-    return context_message
-
-
-def _parse_tool_arguments(tool_call):
-    try:
-        return json.loads(tool_call.function.arguments or "{}")
-    except json.JSONDecodeError:
-        return {}
-
-
-async def _execute_tool(index, tool_name, arguments):
-    result = await run_tool(tool_name, arguments)
-    return index, result
 
 
 async def generate(client, model, context, tools, user_input):
     context.append({"role": "user", "content": user_input})
 
-    for _ in range(MAX_TOOL_ROUNDS):
-        try:
-            response = await client.chat.completions.create(
-                model=model,
-                messages=context,
-                tools=tools,
-            )
-        except OpenAIError as error:
-            yield {
-                "type": "error",
-                "message": f"OpenAI API 呼叫失敗：{error}",
-            }
-            return
+    for i in range(10):
+        response = await client.chat.completions.create(
+            model=model,
+            messages=context,
+            tools=tools,
+            parallel_tool_calls=False,
+        )
 
         message = response.choices[0].message
-        context.append(_assistant_message_to_context(message))
+        context_message = {
+            "role": "assistant",
+            "content": message.content,
+        }
 
         if not message.tool_calls:
+            context.append(context_message)
             yield {
                 "type": "final_answer",
                 "content": message.content or "",
             }
             return
+
+        tool_call = message.tool_calls[0]
+        context_message["tool_calls"] = [{
+            "id": tool_call.id,
+            "type": tool_call.type,
+            "function": {
+                "name": tool_call.function.name,
+                "arguments": tool_call.function.arguments,
+            },
+        }]
+        context.append(context_message)
 
         if message.content:
             yield {
@@ -75,58 +45,32 @@ async def generate(client, model, context, tools, user_input):
                 "content": message.content,
             }
 
-        tool_requests = []
+        tool_name = tool_call.function.name
+        arguments = json.loads(tool_call.function.arguments or "{}")
 
-        for index, tool_call in enumerate(message.tool_calls):
-            tool_name = tool_call.function.name
-            arguments = _parse_tool_arguments(tool_call)
-            tool_requests.append((index, tool_call, tool_name, arguments))
+        yield {
+            "type": "tool_started",
+            "name": tool_name,
+            "arguments": arguments,
+        }
 
-            yield {
-                "type": "tool_started",
-                "name": tool_name,
-                "arguments": arguments,
+        result = await run_tool(tool_name, arguments)
+
+        yield {
+            "type": "tool_finished",
+            "name": tool_name,
+            "arguments": arguments,
+            "result": result,
+            "success": not result.startswith("工具執行失敗"),
+        }
+
+        context.append(
+            {
+                "role": "tool",
+                "tool_call_id": tool_call.id,
+                "content": result,
             }
-
-        tasks = [
-            asyncio.create_task(
-                _execute_tool(index, tool_name, arguments)
-            )
-            for index, _, tool_name, arguments in tool_requests
-        ]
-        results = [None] * len(tasks)
-
-        try:
-            for completed_task in asyncio.as_completed(tasks):
-                index, result = await completed_task
-                results[index] = result
-                _, _, tool_name, arguments = tool_requests[index]
-
-                yield {
-                    "type": "tool_finished",
-                    "name": tool_name,
-                    "arguments": arguments,
-                    "result": result,
-                    "success": not result.startswith("工具執行失敗"),
-                }
-        finally:
-            for task in tasks:
-                task.cancel()
-
-            await asyncio.gather(*tasks, return_exceptions=True)
-
-        for (_, tool_call, _, _), result in zip(
-            tool_requests,
-            results,
-            strict=True,
-        ):
-            context.append(
-                {
-                    "role": "tool",
-                    "tool_call_id": tool_call.id,
-                    "content": result,
-                }
-            )
+        )
 
     limit_message = "工具調用次數已達上限，已停止此次請求。"
     context.append({"role": "assistant", "content": limit_message})
