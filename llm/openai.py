@@ -1,22 +1,11 @@
 import asyncio
 import json
-from pathlib import Path
 
 from openai import OpenAIError
 from tools.tool_call import run_tool
 
 
-TOOLS_PATH = Path(__file__).resolve().parent.parent / "tools" / "tools.json"
 MAX_TOOL_ROUNDS = 10
-
-
-def _load_tools_sync():
-    with TOOLS_PATH.open(encoding="utf-8") as tools_file:
-        return json.load(tools_file)
-
-
-async def load_tools():
-    return await asyncio.to_thread(_load_tools_sync)
 
 
 def _assistant_message_to_context(message):

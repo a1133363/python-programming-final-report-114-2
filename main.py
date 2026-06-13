@@ -1,16 +1,21 @@
 import asyncio
+import json
 import os
 import random
 from pathlib import Path
 
 import yaml
-
 from dotenv import load_dotenv
 
 from gateways.cli import run
 
 
-CONFIG_PATH = Path(__file__).with_name("config.yaml")
+with Path(__file__).with_name("config.yaml").open(encoding="utf-8") as config_file:
+    config = yaml.safe_load(config_file)
+
+with (Path(__file__).parent / "tools" / "tools.json").open(encoding="utf-8") as tools_file:
+    tools = json.load(tools_file)
+
 sessions = []
 
 
@@ -48,8 +53,6 @@ def get_context(session_id):
 
 async def main():
     load_dotenv()
-    with CONFIG_PATH.open(encoding="utf-8") as config_file:
-        config = yaml.safe_load(config_file)
     model = os.getenv("MODEL")
 
     print(
@@ -68,7 +71,7 @@ async def main():
                 continue
             case "chat":
                 session_id = create_session("cli", config["model_config"]["system_prompt"])
-                await run(model, session_id, get_context(session_id))
+                await run(model, session_id, get_context(session_id), tools)
             case "models":
                 model = (await asyncio.to_thread(input, "輸入模型 ID（直接 Enter 取消）：")).strip()
                 if not model:

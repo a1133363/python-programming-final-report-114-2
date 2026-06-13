@@ -48,7 +48,9 @@ uv run main.py
 每次輸入 `chat` 都會建立全新的 session。Session ID 格式為
 `gateway名稱:隨機且不重複的ID`，例如 `cli:1121490000`。
 
-所有 session 都由 `main.py` 的全域 `sessions` list 管理，資料結構如下：
+`config.yaml` 與 `tools/tools.json` 都由 `main.py` 讀取，分別儲存在全域
+`config` 與 `tools` 變數。所有 session 也由 `main.py` 的全域 `sessions`
+list 管理，資料結構如下：
 
 ```python
 [
@@ -80,5 +82,5 @@ gateways/cli.py    CLI 輸入與事件顯示
 llm/openai.py      對話 context、OpenAI API 與工具調用迴圈
 tools/tool_call.py 工具執行處理
 tools/tools.json   OpenAI tools 定義
-main.py            程式入口、全域 sessions、環境設定與指令處理
+main.py            程式入口、全域設定、sessions 與指令處理
 ```

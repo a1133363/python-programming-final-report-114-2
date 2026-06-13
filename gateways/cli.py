@@ -3,7 +3,7 @@ import os
 
 from openai import AsyncOpenAI
 
-from llm.openai import generate, load_tools
+from llm.openai import generate
 
 TOOL_LABELS = {
     "read_file": "查看檔案",
@@ -50,10 +50,9 @@ def _print_event(event):
         print(event["message"])
 
 
-async def run(model, session_id, context):
+async def run(model, session_id, context, tools):
     api_key = os.getenv("API_KEY")
     api_url = os.getenv("API_URL")
-    tools = await load_tools()
 
     print(
         f"\n已進入對話模式，目前模型：{model}\n"
