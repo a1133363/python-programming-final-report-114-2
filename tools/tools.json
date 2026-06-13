@@ -3,13 +3,13 @@
     "type": "function",
     "function": {
       "name": "read_file",
-      "description": "Read and return the UTF-8 text content of a file in the project.",
+      "description": "讀取並回傳專案中檔案的 UTF-8 文字內容",
       "parameters": {
         "type": "object",
         "properties": {
           "path": {
             "type": "string",
-            "description": "File path relative to the project root."
+            "description": "相對於專案根目錄的檔案路徑"
           }
         },
         "required": [
@@ -24,13 +24,13 @@
     "type": "function",
     "function": {
       "name": "search_files",
-      "description": "Recursively search for files in the project using a glob pattern.",
+      "description": "使用 glob 模式遞迴搜尋專案中的檔案",
       "parameters": {
         "type": "object",
         "properties": {
           "pattern": {
             "type": "string",
-            "description": "Glob pattern such as '*.py', 'README*', or 'tools/*.json'."
+            "description": "Glob 搜尋模式，例如 '*.py'、'README*' 或 'tools/*.json'"
           }
         },
         "required": [
@@ -45,17 +45,17 @@
     "type": "function",
     "function": {
       "name": "create_file",
-      "description": "Create a new UTF-8 text file in the project. This tool does not overwrite existing files.",
+      "description": "在專案中建立新的 UTF-8 文字檔案。此工具不會覆寫現有檔案",
       "parameters": {
         "type": "object",
         "properties": {
           "path": {
             "type": "string",
-            "description": "New file path relative to the project root."
+            "description": "相對於專案根目錄的新檔案路徑"
           },
           "content": {
             "type": "string",
-            "description": "Complete text content to write to the new file."
+            "description": "要寫入新檔案的完整文字內容"
           }
         },
         "required": [
