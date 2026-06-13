@@ -1,5 +1,6 @@
 import asyncio
 import os
+import random
 from pathlib import Path
 
 import yaml
@@ -10,6 +11,39 @@ from gateways.cli import run
 
 
 CONFIG_PATH = Path(__file__).with_name("config.yaml")
+sessions = []
+
+
+def create_session(gateway_name, system_prompt):
+    while True:
+        random_id = random.randint(1_000_000_000, 9_999_999_999)
+        session_id = f"{gateway_name}:{random_id}"
+
+        if not any(
+            session["session_id"] == session_id
+            for session in sessions
+        ):
+            break
+
+    session = {
+        "session_id": session_id,
+        "context": [
+            {
+                "role": "system",
+                "content": system_prompt,
+            }
+        ],
+    }
+    sessions.append(session)
+    return session_id
+
+
+def get_context(session_id):
+    for session in sessions:
+        if session["session_id"] == session_id:
+            return session["context"]
+
+    return f"找不到 session：{session_id}"
 
 
 async def main():
@@ -33,7 +67,8 @@ async def main():
             case "":
                 continue
             case "chat":
-                await run(model, config)
+                session_id = create_session("cli", config["model_config"]["system_prompt"])
+                await run(model, session_id, get_context(session_id))
             case "models":
                 model = (await asyncio.to_thread(input, "輸入模型 ID（直接 Enter 取消）：")).strip()
                 if not model:

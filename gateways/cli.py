@@ -3,7 +3,7 @@ import os
 
 from openai import AsyncOpenAI
 
-from llm.openai import create_context, generate, load_tools
+from llm.openai import generate, load_tools
 
 TOOL_LABELS = {
     "read_file": "查看檔案",
@@ -50,14 +50,14 @@ def _print_event(event):
         print(event["message"])
 
 
-async def run(model, config):
+async def run(model, session_id, context):
     api_key = os.getenv("API_KEY")
     api_url = os.getenv("API_URL")
-    messages = create_context(config["model_config"]["system_prompt"])
     tools = await load_tools()
 
     print(
         f"\n已進入對話模式，目前模型：{model}\n"
+        f"Session ID：{session_id}\n"
         "輸入 exit 或 quit 返回指令頁。"
     )
 
@@ -81,7 +81,7 @@ async def run(model, config):
             async for event in generate(
                 client,
                 model,
-                messages,
+                context,
                 tools,
                 user_input,
             ):

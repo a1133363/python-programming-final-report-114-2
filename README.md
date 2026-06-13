@@ -45,11 +45,29 @@ uv run main.py
 - `models`：取得模型列表，並以編號或模型 ID 切換模型。
 - `exit` 或 `quit`：結束程式。
 
-每次輸入 `chat` 都會建立全新的對話，不會保留上一次的對話紀錄。
+每次輸入 `chat` 都會建立全新的 session。Session ID 格式為
+`gateway名稱:隨機且不重複的ID`，例如 `cli:1121490000`。
+
+所有 session 都由 `main.py` 的全域 `sessions` list 管理，資料結構如下：
+
+```python
+[
+    {
+        "session_id": "cli:1121490000",
+        "context": [
+            {
+                "role": "system",
+                "content": "system_prompt",
+            }
+        ],
+    }
+]
+```
 
 `llm/openai.py` 以非同步 generator 產生通用事件，包含 AI 文字、
-工具開始、工具完成、最終回答與錯誤。Gateway 只需處理輸入和事件顯示，
-不需管理 OpenAI 的工具呼叫 context。
+工具開始、工具完成、最終回答與錯誤。`main.py` 建立 session 後，將
+session ID 與對應 context 傳給 Gateway；Gateway 不需自行建立或保存
+session 狀態。
 
 程式使用 `AsyncOpenAI` 呼叫 API，CLI 輸入與本機檔案 I/O 會透過
 `asyncio.to_thread()` 執行，避免阻塞事件迴圈；CLI 輸出則直接使用
@@ -62,5 +80,5 @@ gateways/cli.py    CLI 輸入與事件顯示
 llm/openai.py      對話 context、OpenAI API 與工具調用迴圈
 tools/tool_call.py 工具執行處理
 tools/tools.json   OpenAI tools 定義
-main.py            程式入口、環境設定與指令處理
+main.py            程式入口、全域 sessions、環境設定與指令處理
 ```

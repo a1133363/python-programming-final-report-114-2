@@ -19,10 +19,6 @@ async def load_tools():
     return await asyncio.to_thread(_load_tools_sync)
 
 
-def create_context(system_prompt):
-    return [{"role": "system", "content": system_prompt}]
-
-
 def _assistant_message_to_context(message):
     context_message = {
         "role": "assistant",
@@ -57,14 +53,14 @@ async def _execute_tool(index, tool_name, arguments):
     return index, result
 
 
-async def generate(client, model, messages, tools, user_input):
-    messages.append({"role": "user", "content": user_input})
+async def generate(client, model, context, tools, user_input):
+    context.append({"role": "user", "content": user_input})
 
     for _ in range(MAX_TOOL_ROUNDS):
         try:
             response = await client.chat.completions.create(
                 model=model,
-                messages=messages,
+                messages=context,
                 tools=tools,
             )
         except OpenAIError as error:
@@ -75,7 +71,7 @@ async def generate(client, model, messages, tools, user_input):
             return
 
         message = response.choices[0].message
-        messages.append(_assistant_message_to_context(message))
+        context.append(_assistant_message_to_context(message))
 
         if not message.tool_calls:
             yield {
@@ -135,7 +131,7 @@ async def generate(client, model, messages, tools, user_input):
             results,
             strict=True,
         ):
-            messages.append(
+            context.append(
                 {
                     "role": "tool",
                     "tool_call_id": tool_call.id,
@@ -144,7 +140,7 @@ async def generate(client, model, messages, tools, user_input):
             )
 
     limit_message = "工具調用次數已達上限，已停止此次請求。"
-    messages.append({"role": "assistant", "content": limit_message})
+    context.append({"role": "assistant", "content": limit_message})
     yield {
         "type": "error",
         "message": limit_message,
