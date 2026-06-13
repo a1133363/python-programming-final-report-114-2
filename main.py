@@ -12,16 +12,10 @@ from gateways.cli import run
 CONFIG_PATH = Path(__file__).with_name("config.yaml")
 
 
-def _load_config_sync():
+async def main():
+    load_dotenv()
     with CONFIG_PATH.open(encoding="utf-8") as config_file:
         config = yaml.safe_load(config_file)
-
-    return config
-
-
-async def main():
-    await asyncio.to_thread(load_dotenv)
-    config = await asyncio.to_thread(_load_config_sync)
     model = os.getenv("MODEL")
 
     print(
@@ -33,47 +27,25 @@ async def main():
     )
 
     while True:
-        try:
-            command = (
-                await asyncio.to_thread(input, "\n指令：")
-            ).strip().lower()
-        except (EOFError, KeyboardInterrupt):
-            print("\n再見！")
-            return
+        command = (await asyncio.to_thread(input, "\n指令：")).strip().lower()
 
-        if not command:
-            continue
-
-        if command == "chat":
-            await run(model, config)
-        elif command == "models":
-            try:
-                model = (
-                    await asyncio.to_thread(
-                        input,
-                        "輸入模型 ID（直接 Enter 取消）：",
-                    )
-                ).strip()
-            except (EOFError, KeyboardInterrupt):
-                print("\n已取消切換模型。")
+        match command:
+            case "":
                 continue
-
-            if not model:
-                print("已取消切換模型。")
+            case "chat":
+                await run(model, config)
+            case "models":
+                model = (await asyncio.to_thread(input, "輸入模型 ID（直接 Enter 取消）：")).strip()
+                if not model:
+                    print("已取消切換模型。")
+                else:
+                    print(f"已切換模型：{model}")
                 continue
-
-            print(f"已切換模型：{model}")
-        elif command == "help":
-            print(
-                f"\n目前模型：{model}\n"
-                "可用指令：chat、models、help、exit"
-            )
-        elif command in {"exit", "quit"}:
-            print("再見！")
-            return
-        else:
-            print(f"未知指令：{command}")
-
+            case "exit" | "quit":
+                print("再見！")
+                return
+            case _:
+                print(f"未知指令：{command}")
 
 if __name__ == "__main__":
     asyncio.run(main())

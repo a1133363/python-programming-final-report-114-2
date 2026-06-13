@@ -1,6 +1,5 @@
 import asyncio
 import json
-from functools import cache
 from pathlib import Path
 
 from openai import OpenAIError
@@ -11,7 +10,6 @@ TOOLS_PATH = Path(__file__).resolve().parent.parent / "tools" / "tools.json"
 MAX_TOOL_ROUNDS = 10
 
 
-@cache
 def _load_tools_sync():
     with TOOLS_PATH.open(encoding="utf-8") as tools_file:
         return json.load(tools_file)
