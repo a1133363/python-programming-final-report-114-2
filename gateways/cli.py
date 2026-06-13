@@ -32,13 +32,13 @@ async def run(model, session_id, context, tools):
             else:
                 async for event in generate(client, model, context, tools, user_input):
                     if event["type"] in {"assistant_text", "final_answer"}:
-                        print(f"AI：{event['content']}")
+                        print(f"\nAI：{event['content']}")
                     elif event["type"] == "tool_started":
-                        print(f"AI 使用工具：{event['name']}")
+                        print(f"\nAI 使用工具：{event['name']}")
                     elif event["type"] == "tool_finished":
                         if not event["success"]:
-                            print(f"工具 {event['name']} 執行失敗：{event['result']}")
+                            print(f"工具 {event['name']} 執行失敗")
                         else:
-                            print(f"工具 {event['name']} 執行成功：{event['result']}")
+                            print(f"工具 {event['name']} 執行成功")
                     elif event["type"] == "error":
                         print(event["message"])

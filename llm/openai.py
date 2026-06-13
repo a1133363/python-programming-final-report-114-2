@@ -46,7 +46,11 @@ async def generate(client, model, context, tools, user_input):
             }
 
         tool_name = tool_call.function.name
-        arguments = json.loads(tool_call.function.arguments or "{}")
+
+        if tool_call.function.arguments:
+            arguments = json.loads(tool_call.function.arguments)
+        else:
+            arguments = {}
 
         yield {
             "type": "tool_started",
