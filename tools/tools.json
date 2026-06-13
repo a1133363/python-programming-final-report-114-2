@@ -1,0 +1,70 @@
+[
+  {
+    "type": "function",
+    "function": {
+      "name": "read_file",
+      "description": "讀取並回傳專案中檔案的 UTF-8 文字內容",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "相對於專案根目錄的檔案路徑"
+          }
+        },
+        "required": [
+          "path"
+        ],
+        "additionalProperties": false
+      },
+      "strict": true
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "search_files",
+      "description": "使用 glob 模式遞迴搜尋專案中的檔案",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "pattern": {
+            "type": "string",
+            "description": "Glob 搜尋模式，例如 '*.py'、'README*' 或 'tools/*.json'"
+          }
+        },
+        "required": [
+          "pattern"
+        ],
+        "additionalProperties": false
+      },
+      "strict": true
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "create_file",
+      "description": "在專案中建立新的 UTF-8 文字檔案。此工具不會覆寫現有檔案",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string",
+            "description": "相對於專案根目錄的新檔案路徑"
+          },
+          "content": {
+            "type": "string",
+            "description": "要寫入新檔案的完整文字內容"
+          }
+        },
+        "required": [
+          "path",
+          "content"
+        ],
+        "additionalProperties": false
+      },
+      "strict": true
+    }
+  }
+]

@@ -1,60 +1,89 @@
 import os
+import json
+import yaml
+import random
+import asyncio
 
+from pathlib import Path
 from dotenv import load_dotenv
-from openai import OpenAI
+
+from gateways.cli import run
 
 
-def main() -> None:
+with Path(__file__).with_name("config.yaml").open(encoding="utf-8") as config_file:
+    config = yaml.safe_load(config_file)
+
+with (Path(__file__).parent / "tools" / "tools.json").open(encoding="utf-8") as tools_file:
+    tools = json.load(tools_file)
+
+sessions = []
+
+
+def create_session(gateway_name, system_prompt):
+    while True:
+        random_id = random.randint(1_000_000_000, 9_999_999_999)
+        session_id = f"{gateway_name}:{random_id}"
+
+        if not any(
+            session["session_id"] == session_id
+            for session in sessions
+        ):
+            break
+
+    session = {
+        "session_id": session_id,
+        "context": [
+            {
+                "role": "system",
+                "content": system_prompt,
+            }
+        ],
+    }
+    sessions.append(session)
+    return session_id
+
+
+def get_context(session_id):
+    for session in sessions:
+        if session["session_id"] == session_id:
+            return session["context"]
+
+    return f"找不到 session：{session_id}"
+
+
+async def main():
     load_dotenv()
-
     model = os.getenv("MODEL")
-    api_url = os.getenv("API_URL")
-    api_key = os.getenv("API_KEY")
 
-    if not model:
-        print("缺少 MODEL，請先建立 .env 並完成設定。")
-        return
-
-    if not api_key:
-        print("缺少 API_KEY 或 OPENAI_API_KEY，請先完成 .env 設定。")
-        return
-
-    client = OpenAI(api_key=api_key, base_url=api_url)
-    messages = []
-
-    print(f"已啟動，目前模型：{model}")
-    print("輸入 exit 或 quit 結束對話。")
+    print(
+        f"\n已啟動，目前模型：{model}\n"
+        "可用指令：\n"
+        "  chat    開啟 CLI 對話\n"
+        "  models  查看並切換模型\n"
+        "  exit    結束程式"
+    )
 
     while True:
-        try:
-            user_input = input("\n你：").strip()
-        except (EOFError, KeyboardInterrupt):
-            print("\n再見！")
-            break
+        command = (await asyncio.to_thread(input, "\n指令：")).strip().lower()
 
-        if not user_input:
-            continue
-
-        if user_input.lower() in {"exit", "quit"}:
-            print("再見！")
-            break
-
-        messages.append({"role": "user", "content": user_input})
-
-        try:
-            response = client.chat.completions.create(
-                model=model,
-                messages=messages,
-            )
-            assistant_message = response.choices[0].message.content or ""
-        except Exception as error:
-            messages.pop()
-            print(f"發生錯誤：{error}")
-            continue
-
-        messages.append({"role": "assistant", "content": assistant_message})
-        print(f"AI：{assistant_message}")
-
+        match command:
+            case "":
+                continue
+            case "chat":
+                session_id = create_session("cli", config["model_config"]["system_prompt"])
+                await run(model, session_id, get_context(session_id), tools)
+            case "models":
+                model = (await asyncio.to_thread(input, "輸入模型 ID（直接 Enter 取消）：")).strip()
+                if not model:
+                    print("已取消切換模型。")
+                else:
+                    print(f"已切換模型：{model}")
+                continue
+            case "exit" | "quit":
+                print("再見！")
+                return
+            case _:
+                print(f"未知指令：{command}")
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
