@@ -1,7 +1,7 @@
 [project]
-name = "python-programming-final-report-114-2"
-version = "0.1.0"
-description = "Add your description here"
+name = "mini-openclaw"
+version = "0.2.0"
+description = "迷你的 Openclaw"
 readme = "README.md"
 requires-python = ">=3.13.9"
 dependencies = [

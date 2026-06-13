@@ -1,4 +1,4 @@
-# AI CLI
+# mini-openclaw
 
 使用 OpenAI Python SDK 製作的命令列 AI 對話程式。
 
