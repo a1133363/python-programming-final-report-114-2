@@ -55,7 +55,6 @@ async def generate(client, model, context, tools, user_input):
         yield {
             "type": "tool_started",
             "name": tool_name,
-            "arguments": arguments,
         }
 
         result = await run_tool(tool_name, arguments)
@@ -63,8 +62,6 @@ async def generate(client, model, context, tools, user_input):
         yield {
             "type": "tool_finished",
             "name": tool_name,
-            "arguments": arguments,
-            "result": result,
             "success": not result.startswith("工具執行失敗"),
         }
 
